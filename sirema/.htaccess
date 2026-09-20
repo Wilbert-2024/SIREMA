@@ -1,0 +1,11 @@
+# Impedir que se pueda ver el listado de contenidos de un directorio
+
+Options All -Indexes
+
+# Url Amigables
+
+RewriteEngine on
+
+#RewriteBase /cms_mvc/
+
+RewriteRule ^(\w+)$ index.php?action=$1&id=$2 [L,QSA]

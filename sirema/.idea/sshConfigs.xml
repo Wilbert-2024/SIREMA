@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="SshConfigs">
+    <configs>
+      <sshConfig authType="OPEN_SSH" connectionConfig="{&quot;serverAliveInterval&quot;:300}" host="165.98.37.11" id="f51be31c-401a-4441-8cfa-22d130467ae2" port="22" nameFormat="DESCRIPTIVE" username="wbicu" useOpenSSHConfig="true" />
+    </configs>
+  </component>
+</project>

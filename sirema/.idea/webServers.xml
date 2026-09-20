@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="WebServers">
+    <option name="servers">
+      <webServer id="32f6fd4e-bf3e-4ff0-856e-8fbcec985ce2" name="165.98.37.11">
+        <fileTransfer rootFolder="/var/www/html/wbicu" accessType="SFTP" host="165.98.37.11" port="22" sshConfigId="f51be31c-401a-4441-8cfa-22d130467ae2" sshConfig="wbicu@165.98.37.11:22 agent" authAgent="true">
+          <advancedOptions>
+            <advancedOptions dataProtectionLevel="Private" passiveMode="true" shareSSLContext="true" isUseSudo="true" />
+          </advancedOptions>
+        </fileTransfer>
+      </webServer>
+    </option>
+  </component>
+</project>
