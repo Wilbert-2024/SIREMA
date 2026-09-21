@@ -55,9 +55,74 @@ if(!$estado['Estado'])
         font-weight: bold;
     }
 
+
+    /* CORRECCION: estilos locales; conserva el azul y el color de la tabla.
+       Si el espacio es muy reducido, el desplazamiento queda dentro del marco. */
+    #detalle_matriculado_contenedor .detalle-tabla-marco {
+        width: 100%;
+        max-width: 100%;
+        overflow-x: auto;
+    }
+
+    #detalle_matriculado_contenedor .detalle-tabla {
+        width: 100%;
+        min-width: 760px;
+        table-layout: fixed;
+        margin-bottom: 0;
+    }
+
+    /* CORRECCION: limita el espacio interno impuesto por la plantilla.
+       No se permite partir palabras como GRUPO o CARRERA por la mitad. */
+    #detalle_matriculado_contenedor .detalle-tabla th,
+    #detalle_matriculado_contenedor .detalle-tabla td {
+        box-sizing: border-box;
+        padding: 12px 10px !important;
+        vertical-align: middle;
+        word-break: normal !important;
+        overflow-wrap: normal !important;
+    }
+
+    /* Encabezados legibles: los saltos se indican expresamente con br. */
+    #detalle_matriculado_contenedor .detalle-tabla th {
+        white-space: nowrap !important;
+        font-size: 12px;
+        line-height: 1.5;
+        letter-spacing: 0.03em;
+    }
+
+    /* Carrera y turno se distribuyen por palabras completas. */
+    #detalle_matriculado_contenedor .detalle-tabla td {
+        white-space: normal !important;
+        line-height: 1.5;
+    }
+
+    /* Centra las columnas breves y deja Carrera/Turno alineados a la izquierda. */
+    #detalle_matriculado_contenedor .detalle-tabla th:not(:first-child):not(:nth-child(4)),
+    #detalle_matriculado_contenedor .detalle-tabla td:not(:first-child):not(:nth-child(4)) {
+        text-align: center;
+    }
+
+    /* Cantidades uniformes, contenidas y con espacio para leer el numero. */
+    #detalle_matriculado_contenedor .detalle-tabla input[type="number"] {
+        box-sizing: border-box;
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        height: 34px;
+        padding: 4px 6px;
+        border: 1px solid #adb5bd;
+        border-radius: 4px;
+    }
+
+    /* Mantiene el icono original de eliminar dentro de la columna Accion. */
+    #detalle_matriculado_contenedor .detalle-tabla td:last-child i {
+        font-size: 1.5rem;
+    }
+
 </style>
 
-<form data-bind="submit: guardar">
+<!-- NUEVO: ID utilizado solo por las reglas de esta vista. -->
+<form id="form_matriculado" data-bind="submit: guardar">
     
 
 
@@ -99,6 +164,9 @@ if(!$estado['Estado'])
 
                </div>
 
+               <!-- NUEVO: oculto hasta completar los cinco campos del encabezado.
+                    Se conserva el contenido y todos sus data-bind originales. -->
+               <div id="detalle_matriculado_contenedor" style="display: none;">
                <!--Third Row-->
                <hr>
                <div class="card">
@@ -135,16 +203,28 @@ if(!$estado['Estado'])
 
                        <div class="row mt-3">
                            <div class="col-12">
-                               <table class="table table-success">
+                               <!-- NUEVO: tabla contenida en el marco azul. -->
+                               <div class="detalle-tabla-marco">
+                               <table class="table table-success detalle-tabla">
+                                   <!-- NUEVO: las siete columnas suman el 100% del ancho. -->
+                                   <colgroup>
+                                       <col style="width: 28%;">
+                                       <col style="width: 11%;">
+                                       <col style="width: 9%;">
+                                       <col style="width: 17%;">
+                                       <col style="width: 13%;">
+                                       <col style="width: 13%;">
+                                       <col style="width: 9%;">
+                                   </colgroup>
                                    <thead class="">
                                     <tr>
                                         <th>Carrera</th>
-                                        <th>Año Carrera</th>
+                                        <th>Año<br>Carrera</th>
                                         <th>Grupo</th>
                                         <th>Turno</th>
-                                        <th>Cant. Femenino</th>
-                                        <th>Cant. Masculino</th>
-                                        <th>Action</th>
+                                        <th>Cant.<br>Femenino</th>
+                                        <th>Cant.<br>Masculino</th>
+                                        <th>Acción</th>
                                     </tr>
                                    </thead>
                                    <tbody data-bind="foreach: DetalleMatriculados">
@@ -165,6 +245,7 @@ if(!$estado['Estado'])
                                         </tr>
                                    </tbody>
                                </table>
+                               </div><!-- NUEVO: fin del marco de la tabla. -->
                            </div>
                        </div>
                    </div>
@@ -174,15 +255,149 @@ if(!$estado['Estado'])
                <!--Fourt Row-->
                <div class="row mt-5">
                    <div class="col-3">
+                    <!-- NUEVO: Guardar comparte el contenedor del detalle;
+                         ambos se muestran y ocultan con la misma validacion. -->
                     <button type="submit" class="btn btn-primary">Guardar</button>
 
                    </div>
                </div>
+               </div><!-- NUEVO: fin del contenedor de detalle y Guardar. -->
            </div>
         </div>
     </div>
 </div>
 
-</from>
+<!-- CORRECCION: cierre correcto del formulario. -->
+</form>
 
 
+
+<!-- NUEVO: reglas de esta vista. El archivo create.js original no se modifica.
+     Este bloque no carga librerias, no hace consultas y no llama a applyBindings. -->
+<script>
+(function () {
+    var formulario = document.getElementById('form_matriculado');
+    var detalle = document.getElementById('detalle_matriculado_contenedor');
+    if (!formulario || !detalle) return;
+
+    var ids = ['anio_lectivo_id', 'centro_id', 'carrera_id', 'tipo_ingreso_id', 'semestre_id'];
+    var campos = ids.map(function (id) { return document.getElementById(id); });
+    if (campos.some(function (campo) { return !campo; })) return;
+    var tipoIngreso = campos[3];
+    var semestre = campos[4];
+    // NUEVO: selector existente de Año de Carrera; conserva las opciones de la BD.
+    var anioCarrera = document.getElementById('anio_carrera_id');
+    var actualizando = false;
+
+    // Normaliza las etiquetas visibles, pero conserva los valores/IDs de la BD.
+    // Admite "1° ingreso", "1.º ingreso", "1er ingreso" y "Primer ingreso".
+    function etiqueta(texto) {
+        return String(texto || '').toLowerCase()
+            .replace(/[°ºª.]/g, '').replace(/\s+/g, ' ').trim();
+    }
+
+    // Sigue el criterio del JS original: una seleccion valida tiene un ID mayor a 0.
+    function encabezadoCompleto() {
+        return campos.every(function (campo) {
+            return campo.selectedIndex >= 0 && Number(campo.value) > 0;
+        });
+    }
+
+    function actualizarVista() {
+        // Evita repetir la regla cuando se notifica al JS el cambio de semestre.
+        if (actualizando) return;
+        actualizando = true;
+        try {
+            var opcionTipo = tipoIngreso.options[tipoIngreso.selectedIndex];
+            var primerIngreso = Number(tipoIngreso.value) > 0 && opcionTipo &&
+                /^(?:1\s*(?:er|ro|o)?|primer|primero) ingreso$/.test(etiqueta(opcionTipo.text));
+
+            // Solo primer ingreso bloquea Semestre. Los otros tipos permiten elegir.
+            semestre.disabled = Boolean(primerIngreso);
+            if (primerIngreso) {
+                var valorAnterior = semestre.value;
+                var indicePrimero = -1;
+                for (var i = 0; i < semestre.options.length; i++) {
+                    var opcion = semestre.options[i];
+                    if (Number(opcion.value) > 0 &&
+                        /^(?:(?:i|1\s*(?:er|ro|o)?|primer|primero) semestre|semestre (?:i|1)|i)$/.test(etiqueta(opcion.text))) {
+                        indicePrimero = i;
+                        break;
+                    }
+                }
+
+                // Usa la opcion real recibida de la BD, sin inventar su ID.
+                // Si aun no se ha cargado I semestre, mantiene el detalle oculto.
+                semestre.selectedIndex = indicePrimero;
+                if (semestre.value !== valorAnterior) {
+                    // Notifica el cambio al evento ORIGINAL de create.js para que
+                    // el valor que se guarda coincida con el mostrado en pantalla.
+                    semestre.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+            }
+
+            // NUEVO: primer ingreso corresponde al año "I" (numero romano).
+            // Busca su ID real entre las opciones; no supone que el ID sea 1.
+            if (anioCarrera) {
+                anioCarrera.disabled = Boolean(primerIngreso);
+                if (primerIngreso) {
+                    var indicePrimerAnio = -1;
+                    for (var j = 0; j < anioCarrera.options.length; j++) {
+                        var opcionAnio = anioCarrera.options[j];
+                        if (Number(opcionAnio.value) > 0 && etiqueta(opcionAnio.text) === 'i') {
+                            indicePrimerAnio = j;
+                            break;
+                        }
+                    }
+                    // Si aun no llega el catalogo, queda sin seleccion hasta recibirlo.
+                    // create.js lee este mismo selector al pulsar Agregar.
+                    anioCarrera.selectedIndex = indicePrimerAnio;
+                }
+                // Al cambiar a Reingreso se habilita de nuevo, sin borrar las filas.
+            }
+
+            // Oculta sin borrar filas. Centro y Carrera conservan su logica original.
+            detalle.style.display = encabezadoCompleto() ? '' : 'none';
+        } finally {
+            actualizando = false;
+        }
+    }
+
+    // Los cambios del usuario se procesan despues de los eventos de cada selector.
+    formulario.addEventListener('change', function (evento) {
+        // NUEVO: aplica tambien la regla cuando cambia Año de Carrera.
+        if (ids.indexOf(evento.target.id) !== -1 || evento.target.id === 'anio_carrera_id') actualizarVista();
+    });
+
+    // Detecta cuando create.js inserta las opciones recibidas de la base de datos.
+    // No depende de temporizadores ni del orden en que llegan las respuestas.
+    var observador = new MutationObserver(actualizarVista);
+    campos.forEach(function (campo) {
+        observador.observe(campo, { childList: true, subtree: true, characterData: true });
+    });
+
+    // NUEVO: selecciona "I" tambien si los años llegan despues de elegir primer ingreso.
+    if (anioCarrera) {
+        observador.observe(anioCarrera, { childList: true, subtree: true, characterData: true });
+    }
+
+    // Evita guardar filas ocultas si algun campo ha vuelto a "Seleccione".
+    // La captura comprueba el encabezado antes del submit: guardar original.
+    formulario.addEventListener('submit', function (evento) {
+        actualizarVista();
+        if (!encabezadoCompleto()) {
+            evento.preventDefault();
+            evento.stopImmediatePropagation();
+            var mensaje = 'Seleccione Año Lectivo, Centro, Carrera, Tipo de Ingreso y Semestre.';
+            if (window.Swal && typeof window.Swal.fire === 'function') {
+                window.Swal.fire('Atención!', mensaje, 'error');
+            } else {
+                window.alert(mensaje);
+            }
+        }
+    }, true);
+
+    // Oculta el detalle tambien al abrir la pagina, antes de recibir los catalogos.
+    actualizarVista();
+})();
+</script>
