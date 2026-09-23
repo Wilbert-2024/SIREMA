@@ -206,18 +206,17 @@ class matriculadoController
     /*
      * Insertar un nuevo registro de matricula
      * */
-
-     // Anterior
-     /*public function insert($data)
+    public function insert($data)
     {
-        $result = $this->model->insert($data);
+        // El acceso a la vista no autoriza por sí solo la solicitud AJAX.
+        if (!isset($_SESSION['usuario'])) {
+            return 'denegado';
+        }
+        $permiso = $this->modelFuncionUsuario->validarPermiso('MATRCR');
+        if (!$permiso || empty($permiso['Estado'])) {
+            return 'denegado';
+        }
 
-        return $result;
-    }*/
-
-    // Nueva versión con validación de datos
-      public function insert($data)
-    {
         if (!is_array($data) || !isset($data['DetalleRegistro']) ||
             !is_array($data['DetalleRegistro']) || count($data['DetalleRegistro']) === 0) {
             return 'datosInvalidos';
