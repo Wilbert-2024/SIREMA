@@ -206,8 +206,47 @@ class matriculadoController
     /*
      * Insertar un nuevo registro de matricula
      * */
-    public function insert($data)
+
+     // Anterior
+     /*public function insert($data)
     {
+        $result = $this->model->insert($data);
+
+        return $result;
+    }*/
+
+    // Nueva versión con validación de datos
+      public function insert($data)
+    {
+        if (!is_array($data) || !isset($data['DetalleRegistro']) ||
+            !is_array($data['DetalleRegistro']) || count($data['DetalleRegistro']) === 0) {
+            return 'datosInvalidos';
+        }
+
+        $total = 0;
+        foreach ($data['DetalleRegistro'] as $detalle) {
+            if (!is_array($detalle)) {
+                return 'datosInvalidos';
+            }
+            foreach (['Femeninos', 'Masculinos'] as $campo) {
+                if (!isset($detalle[$campo]) ||
+                    !(is_int($detalle[$campo]) || is_string($detalle[$campo])) ||
+                    !preg_match('/^(0|[1-9][0-9]*)$/D', (string) $detalle[$campo]) ||
+                    strlen((string) $detalle[$campo]) > 10 ||
+                    (float) $detalle[$campo] > 2147483647) {
+                    return 'datosInvalidos';
+                }
+                $total += (int) $detalle[$campo];
+            }
+        }
+        if ($total < 1 || $total > 2147483647 || !isset($data['Total']) ||
+            !(is_int($data['Total']) || is_string($data['Total'])) ||
+            !preg_match('/^(0|[1-9][0-9]*)$/D', (string) $data['Total']) ||
+            strlen((string) $data['Total']) > 10 ||
+            $total !== (int) $data['Total']) {
+            return 'datosInvalidos';
+        }
+
         $result = $this->model->insert($data);
 
         return $result;

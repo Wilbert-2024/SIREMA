@@ -348,7 +348,9 @@ let createMatriculadoVm = function () {
     /*
     * Guadar regitros
     * */
-    self.guardar = function()
+
+     // Anterior
+/*   self.guardar = function ()
     {
         let totalNoVacio = 0;
         if (bind.errors().length != 0) {
@@ -360,7 +362,7 @@ let createMatriculadoVm = function () {
         * de los totales
         * no equivale.
         * */
-        bind.DetalleMatriculados().forEach((det)=>{
+  /*     bind.DetalleMatriculados().forEach((det)=>{
             totalNoVacio = parseInt(totalNoVacio) + (parseInt(det.Femeninos()) + parseInt(det.Masculinos()));
         })
 
@@ -429,7 +431,95 @@ let createMatriculadoVm = function () {
         });
 
     }
+} */
+
+    // Nuevo 
+    self.guardar = function () {
+        let totalNoVacio = 0;
+        if (bind.errors().length != 0) {
+
+            bind.errors.showAllMessages();
+            return;
+        }
+        /*Validar que la suma
+        * de los totales
+        * no equivale.
+        * */
+        bind.DetalleMatriculados().forEach((det) => {
+            totalNoVacio = parseInt(totalNoVacio) + (parseInt(det.Femeninos()) + parseInt(det.Masculinos()));
+        })
+
+        if (totalNoVacio == 0) {
+            Swal.fire(
+                'Atención!',
+                'Total de Matriculados es cero.',
+                'error')
+            return;
+        }
+        let detalleRegistro = [];
+        let index = 0;
+        bind.DetalleMatriculados().forEach((det) => {
+            detalleRegistro[index] =
+            {
+                AnioCarreraId: det.AnioCarreraId(),
+                ModalidadId: det.ModalidadId(),
+                GrupoId: det.GrupoId(),
+                TurnoId: det.TurnoId(),
+                Femeninos: det.Femeninos(),
+                Masculinos: det.Masculinos()
+            }
+            index++;
+        })
+        let registro =
+        {
+            CentroId: bind.centro_id(),
+            CarreraId: bind.carrera_id(),
+            TipoIngresoId: bind.tipo_ingreso_id(),
+            SemestreId: bind.semestre_id(),
+            AnioLectivoId: bind.anio_lectivo_id(),
+            Total: totalNoVacio,
+            DetalleRegistro: detalleRegistro
+        };
+
+
+        Swal.fire({
+            title: 'Estas seguro?',
+            text: "Los datos seran guardados",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Si, guardar!'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                axios.post("views/ajax/registro/matriculados/action.php", { type: "insert", registro: registro })
+                    .then(function (response) {
+                        if (response.data == 'ok') {
+                            Swal.fire(
+                                'Registrado!',
+                                'Registro Guardado Correctamente.',
+                                'success')
+
+                            setTimeout(function () {
+                                location.reload()
+                            }, 1300)
+                        }
+                        else if (response.data == 'datosInvalidos') {
+                            Swal.fire('Datos inválidos', 'Las cantidades deben ser enteros mayores o iguales a cero y coincidir con el total.', 'error');
+                        }
+                        else {
+                            Swal.fire('No se guardó la matrícula', 'Revisa los datos e inténtalo de nuevo.', 'error');
+                        }
+                    })
+                    .catch(function (error) {
+                        Swal.fire('No se guardó la matrícula', 'No fue posible completar la solicitud.', 'error');
+                    })
+            }
+        });
+
+    }
 }
+
 
 let bind = new createMatriculadoVm();
 bind.errors = ko.validation.group(bind);

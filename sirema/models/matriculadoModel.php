@@ -65,7 +65,9 @@ class matriculadoModel
     /*
      * Insertar registro_matricula con su detalle
      * */
-    public function insert($data)
+    
+     // Anterior
+     /*public function insert($data)
     {
         $stmt = $this->db->conectar()->prepare("call registro_matricula_crear(?,?,?,?,?,?,?)");
         $stmt->bindParam(1,  $data['CentroId'], PDO::PARAM_INT);
@@ -85,7 +87,7 @@ class matriculadoModel
         /*
          *Guardar detalles de registro de matriculados
          * */
-        $detalle = [];
+       /* $detalle = [];
         $index = 0;
         foreach ($data['DetalleRegistro'] as $reg) {
             $detalle[$index] =
@@ -99,7 +101,72 @@ class matriculadoModel
                     'masculino' => $reg['Masculinos'],
                 ];
             $index++;
+        } */
+
+     // Nueva versión con transacción y manejo de errores
+     public function insert($data)
+    {
+        $conexion = $this->db->conectar();
+        $conexion->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $conexion->beginTransaction();
+        try {
+            $stmt = $conexion->prepare("call registro_matricula_crear(?,?,?,?,?,?,?)");
+            $stmt->bindParam(1,  $data['CentroId'], PDO::PARAM_INT);
+            $stmt->bindParam(2,  $data['CarreraId'], PDO::PARAM_INT);
+            $stmt->bindParam(3,  $data['TipoIngresoId'], PDO::PARAM_INT);
+            $stmt->bindParam(4,  $data['SemestreId'], PDO::PARAM_INT);
+            $stmt->bindParam(5,  $data['AnioLectivoId'], PDO::PARAM_INT);
+            $stmt->bindParam(6,  $_SESSION['usuario'], PDO::PARAM_STR);
+            $stmt->bindParam(7,  $data['Total'], PDO::PARAM_INT);
+
+            $stmt->execute();
+
+            $id = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            $stmt->closeCursor();
+            if($id == null) {
+                $conexion->rollBack();
+                return 'noInsert';
+            }
+            /*
+             *Guardar detalles de registro de matriculados
+             * */
+            $detalle = [];
+            $index = 0;
+            foreach ($data['DetalleRegistro'] as $reg) {
+                $detalle[$index] =
+                    [
+                        'matriculaId' => $id['lastId'],
+                        'anioCarreraId' => $reg['AnioCarreraId'],
+                        'modalidadId' => $reg['ModalidadId'],
+                        'grupoId' => $reg['GrupoId'],
+                        'turnoId' => $reg['TurnoId'],
+                        'femenino' => $reg['Femeninos'],
+                        'masculino' => $reg['Masculinos'],
+                    ];
+                $index++;
+            }
+
+            //Insertar nuevo registros
+            $stmt = $conexion->prepare("call registro_detalle_matriculados_crear(:matriculaId,:anioCarreraId,:modalidadId,:grupoId, :turnoId,:femenino,:masculino)");
+            /*
+             * Insertar un nuevo registro
+             * */
+            foreach ($detalle as $det) {
+                $stmt->execute($det);
+                $stmt->closeCursor();
+            }
+            $conexion->commit();
+            return 'ok';
+        } catch (Throwable $error) {
+            if ($conexion->inTransaction()) {
+                $conexion->rollBack();
+            }
+            error_log('Error al guardar matricula: ' . $error->getMessage());
+            return 'errorGuardar';
         }
+    }
+
 
         //Insertar nuevo registros
         $stmt = $this->db->conectar()->prepare("call registro_detalle_matriculados_crear(:matriculaId,:anioCarreraId,:modalidadId,:grupoId, :turnoId,:femenino,:masculino)");
