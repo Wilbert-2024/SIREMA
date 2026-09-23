@@ -222,6 +222,24 @@ class matriculadoController
             return 'datosInvalidos';
         }
 
+        // Catálogos actuales: 1° Ingreso = 1; año de carrera I = 1.
+        // La regla se comprueba en todos los detalles, también para solicitudes AJAX directas.
+        if (!isset($data['TipoIngresoId']) ||
+            filter_var($data['TipoIngresoId'], FILTER_VALIDATE_INT) === false) {
+            return 'datosInvalidos';
+        }
+        $primerIngreso = (int) $data['TipoIngresoId'] === 1;
+        foreach ($data['DetalleRegistro'] as $detalle) {
+            if (!is_array($detalle) || !isset($detalle['AnioCarreraId']) ||
+                filter_var($detalle['AnioCarreraId'], FILTER_VALIDATE_INT) === false ||
+                (int) $detalle['AnioCarreraId'] < 1) {
+                return 'datosInvalidos';
+            }
+            if ($primerIngreso && (int) $detalle['AnioCarreraId'] !== 1) {
+                return 'reglaAcademica';
+            }
+        }
+
         $total = 0;
         foreach ($data['DetalleRegistro'] as $detalle) {
             if (!is_array($detalle)) {

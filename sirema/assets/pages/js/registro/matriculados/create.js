@@ -356,6 +356,12 @@ let createMatriculadoVm = function () {
             bind.errors.showAllMessages();
             return;
         }
+        // En los catálogos actuales, 1° Ingreso y año I corresponden al ID 1.
+        if (Number(bind.tipo_ingreso_id()) === 1 &&
+            bind.DetalleMatriculados().some(det => Number(det.AnioCarreraId()) !== 1)) {
+            Swal.fire('Regla académica', 'El tipo 1° Ingreso solo permite el año de carrera I.', 'error');
+            return;
+        }
         /*Validar que la suma
         * de los totales
         * no equivale.
@@ -426,6 +432,9 @@ let createMatriculadoVm = function () {
                        }
                        else if (response.data == 'denegado') {
                            Swal.fire('Acceso denegado', 'Tu usuario no tiene permiso para crear matrículas.', 'error');
+                       }
+                       else if (response.data == 'reglaAcademica') {
+                           Swal.fire('Regla académica', 'El tipo 1° Ingreso solo permite el año de carrera I.', 'error');
                        }
                        else {
                            Swal.fire('No se guardó la matrícula', 'Revisa los datos e inténtalo de nuevo.', 'error');
