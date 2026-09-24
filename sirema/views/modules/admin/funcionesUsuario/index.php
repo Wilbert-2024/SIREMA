@@ -36,8 +36,7 @@ if(!$estado['Estado'])
                         <input type="text" data-bind="value: fecha_final" class="form-control" id="datetimepicker2">
                     </div>
                     <div class="col-3">
-                        <label for="buscar_usuario">Buscar Usuario</label>
-                        <button class="btn btn-secondary form-control" data-bs-toggle="modal" data-bs-target="#buscarUsuarioModal">Buscar</button>
+                        <button type="button" class="btn btn-secondary form-control" data-bs-toggle="modal" data-bs-target="#buscarUsuarioModal">Buscar usuario</button>
                     </div>
                 </div>
             </div>

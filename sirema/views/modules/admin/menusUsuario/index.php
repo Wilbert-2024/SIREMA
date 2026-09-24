@@ -18,7 +18,7 @@ if(!$estado['Estado'])
 
 <div class="row mb-3">
     <div class="col-6 text-start">
-        <button class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#buscarUsuarioModal">Abrir Venta de Busqueda para Buscar Usuario</button>
+        <button type="button" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#buscarUsuarioModal">Buscar usuario</button>
     </div>
     <div class="col-6 text-end">
 
