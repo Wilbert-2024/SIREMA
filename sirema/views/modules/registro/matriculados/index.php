@@ -85,10 +85,6 @@ $permisoCrear = $permiso->validarPermiso('MATRCR');
                             <?php if ($permisoCrear && !empty($permisoCrear['Estado'])): ?>
                             <a class="btn btn-outline-primary btn-sm mb-2" data-bind="attr: {href: 'registro_matriculados_etnias?id=' + Id()}">Distribución étnica</a>
                             <?php endif; ?>
-                            <form method="post" action="reporte_informes_reporteDistribucionEtnica" target="_blank">
-                                <input type="hidden" data-bind="value: Id" name="Id">
-                                <button type="submit" class="btn btn-outline-success btn-sm mb-2">Reporte étnico</button>
-                            </form>
                             <a class="text text-danger" data-bind="click: anular" style="cursor: pointer;"><i class="fas fa-eye-slash fa-2x"></i></a>
                             <div>
                                 <form method="post" action="reporte_informes_reporteRegistroMatriculado" target="_blank">

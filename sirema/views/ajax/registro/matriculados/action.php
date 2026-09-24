@@ -62,6 +62,10 @@ switch ($data["type"])
         echo json_encode($matriculado->getDistribucionEtnica($data['id'] ?? null));
         break;
 
+    case "listarReporteEtnico":
+        echo json_encode($matriculado->listarReporteEtnico());
+        break;
+
     case "guardarDistribucionEtnica":
         echo json_encode($matriculado->guardarDistribucionEtnica($data['registro'] ?? null));
         break;

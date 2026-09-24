@@ -1,5 +1,11 @@
 <?php
 
+// El PDF debe enviarse antes de que la plantilla escriba cualquier HTML.
+if (isset($_GET['action']) && $_GET['action'] === 'reporte_informes_reporteDistribucionEtnica') {
+    require __DIR__ . '/views/modules/reporte/informes/reporteDistribucionEtnica.php';
+    exit;
+}
+
 //require_once "models/loginModel.php";
 $isNotReport = true;
 if(isset($_GET['action']))

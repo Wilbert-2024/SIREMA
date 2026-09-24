@@ -220,6 +220,14 @@ class matriculadoController
         return $matricula ?: 'noEncontrada';
     }
 
+    public function listarReporteEtnico()
+    {
+        if (!isset($_SESSION['usuario'])) return 'denegado';
+        $permiso = $this->modelFuncionUsuario->validarPermiso('MATRIN');
+        if (!$permiso || empty($permiso['Estado'])) return 'denegado';
+        return $this->model->listarReporteEtnico($_SESSION['usuario']);
+    }
+
     public function guardarDistribucionEtnica($data)
     {
         if (!isset($_SESSION['usuario'])) return 'denegado';

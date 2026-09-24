@@ -102,6 +102,31 @@ class matriculadoModel
         return $matricula;
     }
 
+    public function listarReporteEtnico($usuario)
+    {
+        $sql = "SELECT r.Id, r.Total, c.DescripcionCentro AS Centro,
+                       ca.DescripcionCarrera AS Carrera,
+                       COALESCE(d.TotalEtnias, 0) AS TotalEtnias,
+                       COALESCE(d.NumEtnias, 0) AS NumEtnias
+                FROM registro_matricula r
+                JOIN carrera_centro cc ON cc.Id = r.CarreraCentro_Id
+                JOIN centro c ON c.Id = cc.Centro_Id
+                JOIN carrera ca ON ca.Id = cc.Carrera_Id
+                LEFT JOIN (
+                    SELECT RegistroMatricula_Id, SUM(Cantidad) AS TotalEtnias,
+                           COUNT(*) AS NumEtnias
+                    FROM resgistro_matricula_etnia GROUP BY RegistroMatricula_Id
+                ) d ON d.RegistroMatricula_Id = r.Id
+                WHERE r.Estado = 1 AND EXISTS (
+                    SELECT 1 FROM usuario_centros uc
+                    JOIN usuarios u ON u.Id = uc.Usuarios_Id
+                    WHERE uc.Centro_Id = cc.Centro_Id AND u.NombreUsuario = ?
+                ) ORDER BY r.Id DESC";
+        $stmt = $this->db->conectar()->prepare($sql);
+        $stmt->execute([$usuario]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
     public function guardarDistribucionEtnica($id, $etnias)
     {
         $conexion = $this->db->conectar();
