@@ -46,9 +46,24 @@ class carreraCentroController
     public function habilitarCarreraCentro($datos)
     {
         $estado = $this->modelFuncionUsuario->validarPermiso('CACECR');
-        if(!$estado['Estado'])
+        if(!$estado || empty($estado['Estado']))
             return 'denegado';
-        return $this->model->habilitarCarreraCentro($datos);
+        if (!is_array($datos) || !$datos) return 'datosInvalidos';
+        $centroId = null;
+        $carreras = [];
+        foreach ($datos as $dato) {
+            if (!is_array($dato) || !isset($dato['centroId'], $dato['carreraId']) ||
+                !filter_var($dato['centroId'], FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]) ||
+                filter_var($dato['carreraId'], FILTER_VALIDATE_INT, ['options' => ['min_range' => 0]]) === false) {
+                return 'datosInvalidos';
+            }
+            if ($centroId !== null && $centroId !== (int) $dato['centroId']) return 'datosInvalidos';
+            $centroId = (int) $dato['centroId'];
+            $carreraId = (int) $dato['carreraId'];
+            if ($carreraId === 0 && count($datos) !== 1) return 'datosInvalidos';
+            $carreras[$carreraId] = ['centroId' => $centroId, 'carreraId' => $carreraId];
+        }
+        return $this->model->habilitarCarreraCentro(array_values($carreras));
     }
     /*
     * Destrulle la instancia del controlador

@@ -167,77 +167,43 @@ class funcionUsuarioModel
      * */
     public function eliminarAgregarFuncionesUsuario($data)
     {
-        //Conseguir lista de carreras por el centro
-        $stmt = $this->db->conectar()->prepare("call filtro_getFucionesPorUsuario(?)");
-        $stmt->bindParam(1, $data[0]['UsuarioId'], PDO::PARAM_INT);
-        $stmt->execute();
+        $conexion = $this->db->conectar();
+        $conexion->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        try {
+            $conexion->beginTransaction();
+            $stmt = $conexion->prepare('call filtro_getFucionesPorUsuario(?)');
+            $stmt->execute([$data[0]['UsuarioId']]);
+            $actuales = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $stmt->closeCursor();
 
-        $funcionesUsDB = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-        $stmt->closeCursor();
-
-        $registrosFuncionesUsuarioEliminados = [];
-        $index = 0;
-        $noDentro = false;
-
-        /*
-         * Filtrar la lista de centros asignados a un usuario de la base de datos
-         * contra la lista de cenentros usuarios enviada por el usuario.
-         * Los que no se encuetran en la lista del usuario se ingresaran dentro del
-         * arreglo de $registrosCentrosUsuarioEliminados
-         * */
-        foreach ($funcionesUsDB as $fudb)
-        {
-            if($data[0]['RegistroId'] != 0)
-            {
-                foreach ($data as $ucu)
-                {
-                    if(intval($ucu['RegistroId']) == intval($fudb['Funciones_Id']) && intval($ucu['UsuarioId']) == intval($fudb['Usuarios_Id']))
-                    {
-                        $noDentro = false;
-                        break;
-                    }
-                    else
-                    {
-                        $noDentro = true;
-                    }
-
+            // El valor 0 indica quitar todas las funciones; nunca se inserta.
+            $seleccionadas = [];
+            foreach ($data as $funcion) {
+                if ($funcion['RegistroId'] > 0) {
+                    $seleccionadas[(int) $funcion['RegistroId']] = $funcion;
                 }
             }
-            else
-                $noDentro = true;
-            if($noDentro)
-            {
-                $re['Id'] =$fudb['Id'];
-                $registrosFuncionesUsuarioEliminados[$index] = $re;
-                $index++;
+
+            $eliminar = $conexion->prepare('call filtro_eliminarFuncionUsuario(:Id)');
+            foreach ($actuales as $actual) {
+                if (!isset($seleccionadas[(int) $actual['Funciones_Id']])) {
+                    $eliminar->execute(['Id' => $actual['Id']]);
+                    $eliminar->closeCursor();
+                }
             }
-        }
 
-        /*
-        * Proceso para eliminar un o mas registros de usuario centros
-        */
-        $stmt = null;
-        $stmt = $this->db->conectar()->prepare("call filtro_eliminarFuncionUsuario(:Id)");
-        foreach ($registrosFuncionesUsuarioEliminados as $ucdb)
-        {
-            $stmt->execute($ucdb);
-            $stmt->closeCursor();
+            $agregar = $conexion->prepare('call filtro_agregarFuncionUsuario(:RegistroId,:UsuarioId,:Fecha1,:Fecha2)');
+            foreach ($seleccionadas as $funcion) {
+                $agregar->execute($funcion);
+                $agregar->closeCursor();
+            }
+            $conexion->commit();
+            return 'ok';
+        } catch (Throwable $error) {
+            if ($conexion->inTransaction()) $conexion->rollBack();
+            error_log('Error al asignar funciones al usuario: ' . $error->getMessage());
+            return 'errorGuardar';
         }
-
-        $stmt = null;
-        //Insertar nuevo registros
-        $stmt = $this->db->conectar()->prepare("call filtro_agregarFuncionUsuario(:RegistroId,:UsuarioId, :Fecha1, :Fecha2)");
-        /*
-         * Insertar un nuevo registro
-         * */
-        foreach ($data as $cc)
-        {
-            $stmt->execute($cc);
-            $stmt->closeCursor();
-        }
-
-        return 'ok';
     }
     /*
      * Destrulle la instancia del controlador

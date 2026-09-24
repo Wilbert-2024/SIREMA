@@ -56,10 +56,14 @@ if(!$estado['Estado'])
                           <!--Carreras Disponibles-->
                           <div class="col-6" >
                               <div style="font-size: large; font-weight: bold;">Carreras Disponibles</div>
+                              <button type="button" class="btn btn-outline-primary btn-sm mb-2" data-bind="click: agregarSeleccionadas, enable: seleccionDisponibles().length > 0">Agregar seleccionadas →</button>
                               <div class="border border-2 overflow-scroll h-25">
                                   <ul class="list-group border border-1" data-bind="foreach: CarrerasNoPertenecientes" style="font-size: medium; font-weight: normal;">
-                                      <li class="list-group-item" data-bind="click: remover">
-                                          <div style="font-size: medium"><span data-bind="text: Descripcion"></span> <a href="#"  class="text-secondary"><i class="far fa-caret-square-right fa-1x"></i></a></div>
+                                      <li class="list-group-item">
+                                          <label class="d-flex align-items-center gap-2 mb-0">
+                                              <input type="checkbox" data-bind="checked: $parent.seleccionDisponibles, checkedValue: Id()" aria-label="Seleccionar carrera disponible">
+                                              <span data-bind="text: Descripcion"></span>
+                                          </label>
                                       </li>
                                   </ul>
                               </div>
@@ -68,10 +72,14 @@ if(!$estado['Estado'])
                           <!--Carreras Asignadas al centro-->
                           <div class="col-6">
                               <div style="font-size: large; font-weight: bold;">Carreras En el Centro</div>
+                              <button type="button" class="btn btn-outline-secondary btn-sm mb-2" data-bind="click: quitarSeleccionadas, enable: seleccionAsignadas().length > 0">← Quitar seleccionadas</button>
                               <div class="border border-2 overflow-scroll h-25">
                                   <ul class="list-group border border-1" data-bind="foreach: CarrerasPertenecientesAlCentro" style="font-size: medium; font-weight: normal;">
-                                      <li class="list-group-item" data-bind="click: remover">
-                                          <div style="font-size: medium"><a href="#" class="text-secondary"><i class="far fa-caret-square-left fa-1x"></i></a><span data-bind="text: Descripcion"></span> </div>
+                                      <li class="list-group-item">
+                                          <label class="d-flex align-items-center gap-2 mb-0">
+                                              <input type="checkbox" data-bind="checked: $parent.seleccionAsignadas, checkedValue: Id()" aria-label="Seleccionar carrera asignada">
+                                              <span data-bind="text: Descripcion"></span>
+                                          </label>
                                       </li>
                                   </ul>
                               </div>

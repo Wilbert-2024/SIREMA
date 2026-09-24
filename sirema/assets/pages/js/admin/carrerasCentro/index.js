@@ -71,6 +71,9 @@ function addCentroAListaDeAgregados(_id, _descripcion) {
             {
                 self.CarrerasNoPertenecientes.removeAll();
                 self.CarrerasPertenecientesAlCentro.removeAll();
+                self.seleccionDisponibles.removeAll();
+                self.seleccionAsignadas.removeAll();
+                self.centro_id_actual(0);
             }
         },
         filtrarCarreras: function()
@@ -108,11 +111,14 @@ function getCarreras(centroId)
 {
     if(centroId != bind.centro_id_actual())
     {
+        bind.seleccionDisponibles.removeAll();
+        bind.seleccionAsignadas.removeAll();
         bind.CarrerasNoPertenecientes.removeAll();
         bind.CarrerasPertenecientesAlCentro.removeAll();
         /*No Pertenecientes al centro*/
         axios.post("views/ajax/admin/carrerasCentro/action.php", { type: "noPertenecientes", Id: centroId})
             .then(function(response) {
+                if (String(bind.centro_id_actual()) !== String(centroId)) return;
                 let carreras = response.data;
 
                 carreras.forEach((carrera) => {
@@ -126,6 +132,7 @@ function getCarreras(centroId)
         /*Pertenecientes al centro*/
        axios.post("views/ajax/admin/carrerasCentro/action.php", { type: "pertenecientes", Id: centroId})
           .then(function(response) {
+                if (String(bind.centro_id_actual()) !== String(centroId)) return;
                 let carreras = response.data;
 
               carreras.forEach((carrera) => {
@@ -147,6 +154,32 @@ let carrerasCentroVm = function () {
 
     self.CarrerasNoPertenecientes = ko.observableArray();
     self.CarrerasPertenecientesAlCentro = ko.observableArray();
+    self.seleccionDisponibles = ko.observableArray([]);
+    self.seleccionAsignadas = ko.observableArray([]);
+
+    self.agregarSeleccionadas = function () {
+        const seleccion = new Set(self.seleccionDisponibles().map(String));
+        self.CarrerasNoPertenecientes().filter(carrera => seleccion.has(String(carrera.Id())))
+            .forEach(carrera => {
+                if (!self.CarrerasPertenecientesAlCentro().some(item => String(item.Id()) === String(carrera.Id()))) {
+                    self.CarrerasPertenecientesAlCentro.push(new addCarreraPertenecienteCarrera(carrera.Id(), carrera.Descripcion(), carrera.Centro()));
+                }
+                self.CarrerasNoPertenecientes.remove(carrera);
+            });
+        self.seleccionDisponibles.removeAll();
+    };
+
+    self.quitarSeleccionadas = function () {
+        const seleccion = new Set(self.seleccionAsignadas().map(String));
+        self.CarrerasPertenecientesAlCentro().filter(carrera => seleccion.has(String(carrera.Id())))
+            .forEach(carrera => {
+                if (!self.CarrerasNoPertenecientes().some(item => String(item.Id()) === String(carrera.Id()))) {
+                    self.CarrerasNoPertenecientes.push(new addCarreraNoPerteneciente(carrera.Id(), carrera.Descripcion(), carrera.Centro()));
+                }
+                self.CarrerasPertenecientesAlCentro.remove(carrera);
+            });
+        self.seleccionAsignadas.removeAll();
+    };
 
     ///True - False
     self.showCentroList = ko.observable(false);
@@ -215,6 +248,11 @@ let carrerasCentroVm = function () {
                     return;
                 }
 
+                if (response.data !== 'ok') {
+                    Swal.fire('No se guardaron los cambios', 'Verifica las carreras seleccionadas e inténtalo de nuevo.', 'error');
+                    return;
+                }
+
                 Swal.fire(
                     'Actualizado!',
                     'Las Carreras por el Centro han sido actualizados.',
@@ -222,7 +260,8 @@ let carrerasCentroVm = function () {
                 )
             }).
         catch(function(error) {
-            console.log(error)
+            console.error(error);
+            Swal.fire('No se guardaron los cambios', 'Ocurrió un error al guardar las carreras.', 'error');
         })
     }
 }

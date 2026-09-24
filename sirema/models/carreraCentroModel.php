@@ -43,72 +43,43 @@ class carreraCentroModel
    * */
     public function habilitarCarreraCentro($carrerasCentro)
     {
-        //Conseguir lista de carreras por el centro
-        $stmt = $this->db->conectar()->prepare("call filtro_getCarreraCentroPorCentro(?)");
-        $stmt->bindParam(1, $carrerasCentro[0]['centroId'], PDO::PARAM_INT);
-        $stmt->execute();
+        $conexion = $this->db->conectar();
+        $conexion->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        try {
+            $conexion->beginTransaction();
+            $stmt = $conexion->prepare('call filtro_getCarreraCentroPorCentro(?)');
+            $stmt->execute([$carrerasCentro[0]['centroId']]);
+            $actuales = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $stmt->closeCursor();
 
-        $carrrerasPorCentroDB = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-        $stmt->closeCursor();
-
-        $registrosCarreraCentroEliminados = [];
-        $index = 0;
-        $noDentro = false;
-        /*
-         * Filtrar la lista de carreras centro de la base de datos
-         * contra la lista de carreras centro enviada por el usuario.
-         * Los que no se encuetran en la lista del usuario se ingresaran dentro del
-         * arreglo de $registrosCarreraCentroEliminados
-         * */
-        foreach ($carrrerasPorCentroDB as $cc)
-        {
-            if($carrerasCentro[0]['carreraId'] != 0) {
-                foreach ($carrerasCentro as $ucc) {
-                    if (intval($ucc['centroId']) == intval($cc['Centro_Id']) && intval($ucc['carreraId']) == intval($cc['Carrera_Id'])) {
-                        $noDentro = false;
-                        break;
-                    } else {
-                        $noDentro = true;
-                    }
-
+            // El valor 0 significa dejar el centro sin carreras; no es una carrera.
+            $seleccionadas = [];
+            foreach ($carrerasCentro as $carrera) {
+                if ($carrera['carreraId'] > 0) {
+                    $seleccionadas[(int) $carrera['carreraId']] = $carrera;
                 }
             }
-            else
-                $noDentro = true;
 
-            if($noDentro)
-            {
-                $re['Id'] =$cc['Id'];
-                $registrosCarreraCentroEliminados[$index] = $re;
-                $index++;
+            $deshabilitar = $conexion->prepare('call filtro_deshabilitarCarreraCentro(:Id)');
+            foreach ($actuales as $actual) {
+                if (!isset($seleccionadas[(int) $actual['Carrera_Id']])) {
+                    $deshabilitar->execute(['Id' => $actual['Id']]);
+                    $deshabilitar->closeCursor();
+                }
             }
+
+            $habilitar = $conexion->prepare('call filtro_habilitar_carrera_centro(:carreraId,:centroId)');
+            foreach ($seleccionadas as $carrera) {
+                $habilitar->execute($carrera);
+                $habilitar->closeCursor();
+            }
+            $conexion->commit();
+            return 'ok';
+        } catch (Throwable $error) {
+            if ($conexion->inTransaction()) $conexion->rollBack();
+            error_log('Error al asignar carreras al centro: ' . $error->getMessage());
+            return 'errorGuardar';
         }
-
-        /*
-         * Proceso para deshabilitar carreras por centro
-         * */
-        $stmt = null;
-        $stmt = $this->db->conectar()->prepare("call filtro_deshabilitarCarreraCentro(:Id)");
-        foreach ($registrosCarreraCentroEliminados as $cce)
-        {
-            $stmt->execute($cce);
-            $stmt->closeCursor();
-         }
-
-       $stmt = null;
-        //Insertar nuevo registros o actualizar registro con Estado = 1
-       $stmt = $this->db->conectar()->prepare("call filtro_habilitar_carrera_centro(:carreraId,:centroId)");
-        /*
-         * Actualizar los registros existentes o inserta los nuevos
-         * */
-       foreach ($carrerasCentro as $cc)
-        {
-            $stmt->execute($cc);
-            $stmt->closeCursor();
-        }
-
-        return 'ok';
     }
     /*
   * Destrulle la instancia del Modelo

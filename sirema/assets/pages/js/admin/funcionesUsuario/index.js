@@ -45,6 +45,8 @@ function getRegistrosUsuario(usuarioId)
     }
     if(usuarioId != bind.usuario_id_actual())
     {
+        bind.seleccionDisponibles.removeAll();
+        bind.seleccionAsignadas.removeAll();
         bind.registrosNoPertenecientesAUsuario.removeAll();
         bind.registrosPertenecientesAUsuario.removeAll();
 
@@ -55,6 +57,7 @@ function getRegistrosUsuario(usuarioId)
         /*No Pertenecientes al usuario*/
         axios.post("views/ajax/admin/funcionesUsuario/action.php", { type: "noPertenecientes", data: data})
             .then(function(response) {
+                if (String(bind.usuario_id_actual()) !== String(usuarioId)) return;
                 let registros = response.data;
 
                 registros.forEach((reg) => {
@@ -68,6 +71,7 @@ function getRegistrosUsuario(usuarioId)
         /*Pertenecientes al usuario*/
         axios.post("views/ajax/admin/funcionesUsuario/action.php", { type: "pertenecientes", data: data})
             .then(function(response) {
+                if (String(bind.usuario_id_actual()) !== String(usuarioId)) return;
                 let registros = response.data;
 
                 registros.forEach((reg) => {
@@ -107,6 +111,9 @@ function addUsuarioAListaDeAgregados(_id, _correo) {
             {
                 self.registrosNoPertenecientesAUsuario.removeAll();
                 self.registrosPertenecientesAUsuario.removeAll();
+                self.seleccionDisponibles.removeAll();
+                self.seleccionAsignadas.removeAll();
+                self.usuario_id_actual(0);
             }
         },
         filtrarRegistros: function()
@@ -162,6 +169,34 @@ let funcionesUsuarioVm = function () {
 
     self.registrosNoPertenecientesAUsuario = ko.observableArray();
     self.registrosPertenecientesAUsuario = ko.observableArray();
+    self.seleccionDisponibles = ko.observableArray([]);
+    self.seleccionAsignadas = ko.observableArray([]);
+
+    self.agregarSeleccionados = function () {
+        if (self.tipo_funcion() !== 'fun') return;
+        const seleccion = new Set(self.seleccionDisponibles().map(String));
+        self.registrosNoPertenecientesAUsuario().filter(item => seleccion.has(String(item.RegistroId())))
+            .forEach(item => {
+                if (!self.registrosPertenecientesAUsuario().some(actual => String(actual.RegistroId()) === String(item.RegistroId()))) {
+                    self.registrosPertenecientesAUsuario.push(new addRegistroPerteneciente(item.RegistroId(), item.Descripcion(), item.UsuarioId()));
+                }
+                self.registrosNoPertenecientesAUsuario.remove(item);
+            });
+        self.seleccionDisponibles.removeAll();
+    };
+
+    self.quitarSeleccionados = function () {
+        if (self.tipo_funcion() !== 'fun') return;
+        const seleccion = new Set(self.seleccionAsignadas().map(String));
+        self.registrosPertenecientesAUsuario().filter(item => seleccion.has(String(item.RegistroId())))
+            .forEach(item => {
+                if (!self.registrosNoPertenecientesAUsuario().some(actual => String(actual.RegistroId()) === String(item.RegistroId()))) {
+                    self.registrosNoPertenecientesAUsuario.push(new addRegistroNoPerteneciente(item.RegistroId(), item.Descripcion(), item.UsuarioId()));
+                }
+                self.registrosPertenecientesAUsuario.remove(item);
+            });
+        self.seleccionAsignadas.removeAll();
+    };
 
     ///True - False
     self.showUsuarioList = ko.observable(false);
@@ -179,6 +214,8 @@ let funcionesUsuarioVm = function () {
 
     self.change_tipo_function = function()
     {
+        self.seleccionDisponibles.removeAll();
+        self.seleccionAsignadas.removeAll();
         self.registrosNoPertenecientesAUsuario.removeAll();
         self.registrosPertenecientesAUsuario.removeAll();
         self.usuario_id_actual(0);
@@ -267,13 +304,19 @@ let funcionesUsuarioVm = function () {
                     return;
                 }
 
+                if (response.data !== 'ok') {
+                    Swal.fire('No se guardaron los cambios', 'Verifica las funciones y las fechas seleccionadas.', 'error');
+                    return;
+                }
+
                 Swal.fire(
                     'Actualizado!',
                     'Los Registros Usuario han sido actualizados.',
                     'success')
             }).
         catch(function(error) {
-            console.log(error)
+            console.error(error);
+            Swal.fire('No se guardaron los cambios', 'Ocurrió un error al guardar las funciones.', 'error');
         });
 
     }
