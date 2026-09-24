@@ -247,9 +247,10 @@ class urlController
      * */
     public function renderJS()
     {
-	    if (session_status() === PHP_SESSION_NONE) {
-		    return 'assets/pages/js/login/login.js';
-	    }
+        if (session_status() === PHP_SESSION_NONE ||
+            !isset($_SESSION['funciones_validos'], $_SESSION['valido'])) {
+            return 'assets/pages/js/login/login.js';
+        }
 	    if($_SESSION['funciones_validos'] == false && $_SESSION['valido'] == true)
 	    {
 		    return '';
