@@ -1,13 +1,35 @@
 <?php
-require_once $_SERVER["DOCUMENT_ROOT"]."/sirema/controllers/matriculadoController.php";
+// Las respuestas AJAX deben ser JSON; los detalles técnicos se registran en el servidor.
+ini_set('display_errors', '0');
+ini_set('log_errors', '1');
+error_reporting(E_ALL);
+header('Content-Type: application/json; charset=utf-8');
 
-$js_result = file_get_contents("php://input");
+$js_result = file_get_contents('php://input');
 $data = json_decode($js_result, true);
+if (!is_array($data) || !isset($data['type']) || !is_string($data['type'])) {
+    http_response_code(400);
+    echo json_encode('solicitudInvalida');
+    exit;
+}
 
+$camposRequeridos = [
+    'getCentros' => 'filtro', 'getCarreras' => 'centroId',
+    'getTurnos' => 'modalidadId', 'insert' => 'registro',
+    'index' => 'data', 'anular' => 'id',
+];
+if (isset($camposRequeridos[$data['type']]) &&
+    !isset($data[$camposRequeridos[$data['type']]])) {
+    http_response_code(400);
+    echo json_encode('solicitudInvalida');
+    exit;
+}
 
+try {
+require_once $_SERVER['DOCUMENT_ROOT'] . '/sirema/controllers/matriculadoController.php';
 $matriculado = new matriculadoController();
 
-switch ($data["type"])
+switch ($data['type'])
 {
     case "getCentros":
         $result = $matriculado->getCentros($data["filtro"]);
@@ -85,5 +107,13 @@ switch ($data["type"])
         echo json_encode($result);
         break;
 
-
+    default:
+        http_response_code(400);
+        echo json_encode('solicitudInvalida');
+        break;
+}
+} catch (Throwable $error) {
+    error_log('Error en matrícula (' . $data['type'] . '): ' . $error);
+    http_response_code(500);
+    echo json_encode('errorServidor');
 }
