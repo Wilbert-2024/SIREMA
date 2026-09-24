@@ -31,7 +31,6 @@ let loginVm = function () {
             axios.post("views/ajax/login/action.php", { type: "login", data: form })
                 .then(function(response) {
                     let res = response.data;
-                    console.log(res)
                     if(res == 'noExiste' || res == 'error')
                     {
                         Swal.fire(
@@ -45,21 +44,14 @@ let loginVm = function () {
 
                     if(res == 'ok')
                     {
-                        Swal.fire(
-                            'Bienvenido!',
-                            'Usuario verificao. Redireccionando.....',
-                            'success'
-                        );
-
-                        setTimeout(function()
-                        {
-                            window.location.reload();
-                        },2000)
+                        window.location.replace('/sirema/index.php');
+                        return;
                     }
 
                 })
                 .catch(function(error) {
-                    console.log(error)
+                    console.error(error);
+                    Swal.fire('Error', 'No se pudo iniciar sesión. Inténtalo de nuevo.', 'error');
                 })
     }
 }

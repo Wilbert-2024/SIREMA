@@ -136,8 +136,8 @@ class userController
 
     public function userLogin($data)
     {
+        if (!is_array($data) || empty($data['email']) || empty($data['clave'])) return 'error';
         $login = $this->model->userLogin($data);
-        $funcionesValidas = $this->model->validarFuncionesUsuario($data);
         if(!isset($login['NombreUsuario']))
         {
             return 'noExiste';
@@ -145,15 +145,17 @@ class userController
 
         if(password_verify($data['clave'], $login['Clave']))
         {
+            session_regenerate_id(true);
+            $funcionesValidas = $this->model->validarFuncionesUsuario($data);
             $_SESSION['valido'] = true;
             $_SESSION['usuario'] =  $login['NombreUsuario'];
             $_SESSION['centro'] = $login['centro'];
 
-            if($funcionesValidas['caducado'] < 1)
+            if (is_array($funcionesValidas) && isset($funcionesValidas['caducado']) && $funcionesValidas['caducado'] < 1)
                 $_SESSION['funciones_validos'] = true;
             else
                 $_SESSION['funciones_validos'] = false;
-	        session_start();
+            session_write_close();
             return 'ok';
         }
        
