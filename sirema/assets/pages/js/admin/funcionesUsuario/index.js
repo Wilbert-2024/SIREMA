@@ -18,6 +18,10 @@ function getUsuarios()
     axios.post("views/ajax/admin/funcionesUsuario/action.php", { type: "getUsuarios"})
         .then(function(response) {
             let usuarios = response.data;
+            if (!Array.isArray(usuarios)) {
+                Swal.fire('Sin acceso', 'No tienes permiso para consultar funciones de usuarios.', 'warning');
+                return;
+            }
            usuarios.forEach((u) => {
                 bind.ListaDeUsuariosABuscar.push(new addUsuarioAListaBuscar(u.Id, u.email));
             })
@@ -60,6 +64,11 @@ function getRegistrosUsuario(usuarioId)
                 if (String(bind.usuario_id_actual()) !== String(usuarioId)) return;
                 let registros = response.data;
 
+                if (!Array.isArray(registros)) {
+                    Swal.fire('Sin acceso', 'No fue posible consultar los registros de este usuario.', 'warning');
+                    return;
+                }
+
                 registros.forEach((reg) => {
                     bind.registrosNoPertenecientesAUsuario.push(new addRegistroNoPerteneciente(reg.Id, reg.Des, usuarioId));
                 })
@@ -73,6 +82,11 @@ function getRegistrosUsuario(usuarioId)
             .then(function(response) {
                 if (String(bind.usuario_id_actual()) !== String(usuarioId)) return;
                 let registros = response.data;
+
+                if (!Array.isArray(registros)) {
+                    Swal.fire('Sin acceso', 'No fue posible consultar los registros de este usuario.', 'warning');
+                    return;
+                }
 
                 registros.forEach((reg) => {
                     bind.registrosPertenecientesAUsuario.push(new addRegistroPerteneciente(reg.Id, reg.Des, usuarioId));
@@ -173,7 +187,7 @@ let funcionesUsuarioVm = function () {
     self.seleccionAsignadas = ko.observableArray([]);
 
     self.agregarSeleccionados = function () {
-        if (self.tipo_funcion() !== 'fun') return;
+        if (self.tipo_funcion() !== 'fun' && self.tipo_funcion() !== 'cen') return;
         const seleccion = new Set(self.seleccionDisponibles().map(String));
         self.registrosNoPertenecientesAUsuario().filter(item => seleccion.has(String(item.RegistroId())))
             .forEach(item => {
@@ -186,7 +200,7 @@ let funcionesUsuarioVm = function () {
     };
 
     self.quitarSeleccionados = function () {
-        if (self.tipo_funcion() !== 'fun') return;
+        if (self.tipo_funcion() !== 'fun' && self.tipo_funcion() !== 'cen') return;
         const seleccion = new Set(self.seleccionAsignadas().map(String));
         self.registrosPertenecientesAUsuario().filter(item => seleccion.has(String(item.RegistroId())))
             .forEach(item => {
@@ -310,13 +324,13 @@ let funcionesUsuarioVm = function () {
                 }
 
                 Swal.fire(
-                    'Actualizado!',
-                    'Los Registros Usuario han sido actualizados.',
+                    'Actualizado',
+                    bind.tipo_funcion() === 'cen' ? 'Los centros del usuario se guardaron correctamente.' : 'Las funciones del usuario se guardaron correctamente.',
                     'success')
             }).
         catch(function(error) {
             console.error(error);
-            Swal.fire('No se guardaron los cambios', 'Ocurrió un error al guardar las funciones.', 'error');
+            Swal.fire('No se guardaron los cambios', 'Ocurrió un error al guardar los registros del usuario.', 'error');
         });
 
     }

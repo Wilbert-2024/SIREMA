@@ -63,16 +63,15 @@ if(!$estado['Estado'])
                             </div>
                             <!--Carreras Disponibles-->
                             <div class="col-6" >
-                                <div style="font-size: large; font-weight: bold;">Registros Disponibles</div>
-                                <button type="button" class="btn btn-outline-primary btn-sm mb-2" data-bind="click: agregarSeleccionados, enable: seleccionDisponibles().length > 0, visible: tipo_funcion() === 'fun'">Agregar seleccionadas →</button>
+                                <div style="font-size: large; font-weight: bold;" data-bind="text: tipo_funcion() === 'cen' ? 'Centros disponibles' : 'Funciones disponibles'"></div>
+                                <button type="button" class="btn btn-outline-primary btn-sm mb-2" data-bind="click: agregarSeleccionados, enable: seleccionDisponibles().length > 0, visible: tipo_funcion() !== 'null'">Agregar selección →</button>
                                 <div class="border border-2 overflow-scroll h-25 registros">
                                     <ul class="list-group border border-1" data-bind="foreach: registrosNoPertenecientesAUsuario" style="font-size: medium; font-weight: normal;">
                                         <li class="list-group-item">
-                                            <label class="d-flex align-items-center gap-2 mb-0" data-bind="visible: $parent.tipo_funcion() === 'fun'">
-                                                <input type="checkbox" data-bind="checked: $parent.seleccionDisponibles, checkedValue: RegistroId()" aria-label="Seleccionar función disponible">
+                                            <label class="d-flex align-items-center gap-2 mb-0">
+                                                <input type="checkbox" data-bind="checked: $parent.seleccionDisponibles, checkedValue: RegistroId()" aria-label="Seleccionar registro disponible">
                                                 <span data-bind="text: Descripcion"></span>
                                             </label>
-                                            <a href="#" data-bind="visible: $parent.tipo_funcion() !== 'fun', click: remover"><span data-bind="text: Descripcion"></span> →</a>
                                         </li>
                                     </ul>
                                 </div>
@@ -80,16 +79,15 @@ if(!$estado['Estado'])
 
                             <!--Carreras Asignadas al centro-->
                             <div class="col-6">
-                                <div style="font-size: large; font-weight: bold;">Registros Del Usuario</div>
-                                <button type="button" class="btn btn-outline-secondary btn-sm mb-2" data-bind="click: quitarSeleccionados, enable: seleccionAsignadas().length > 0, visible: tipo_funcion() === 'fun'">← Quitar seleccionadas</button>
+                                <div style="font-size: large; font-weight: bold;" data-bind="text: tipo_funcion() === 'cen' ? 'Centros del usuario' : 'Funciones del usuario'"></div>
+                                <button type="button" class="btn btn-outline-secondary btn-sm mb-2" data-bind="click: quitarSeleccionados, enable: seleccionAsignadas().length > 0, visible: tipo_funcion() !== 'null'">← Quitar selección</button>
                                 <div class="border border-2 overflow-scroll h-25">
                                     <ul class="list-group border border-1" data-bind="foreach: registrosPertenecientesAUsuario" style="font-size: medium; font-weight: normal;">
                                         <li class="list-group-item">
-                                            <label class="d-flex align-items-center gap-2 mb-0" data-bind="visible: $parent.tipo_funcion() === 'fun'">
-                                                <input type="checkbox" data-bind="checked: $parent.seleccionAsignadas, checkedValue: RegistroId()" aria-label="Seleccionar función asignada">
+                                            <label class="d-flex align-items-center gap-2 mb-0">
+                                                <input type="checkbox" data-bind="checked: $parent.seleccionAsignadas, checkedValue: RegistroId()" aria-label="Seleccionar registro asignado">
                                                 <span data-bind="text: Descripcion"></span>
                                             </label>
-                                            <a href="#" data-bind="visible: $parent.tipo_funcion() !== 'fun', click: remover">← <span data-bind="text: Descripcion"></span></a>
                                         </li>
                                     </ul>
                                 </div>

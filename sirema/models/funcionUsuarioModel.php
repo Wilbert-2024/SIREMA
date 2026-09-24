@@ -88,78 +88,43 @@ class funcionUsuarioModel
      * */
     public function eliminarAgregarCentrosParaUsuario($data)
     {
-        //Conseguir lista de carreras por el centro
-        $stmt = $this->db->conectar()->prepare("call filtro_getCentrosUsuarioPorUsuario(?)");
-        $stmt->bindParam(1, $data[0]['UsuarioId'], PDO::PARAM_INT);
-        $stmt->execute();
+        $conexion = $this->db->conectar();
+        $conexion->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        try {
+            $conexion->beginTransaction();
+            $stmt = $conexion->prepare('call filtro_getCentrosUsuarioPorUsuario(?)');
+            $stmt->execute([$data[0]['UsuarioId']]);
+            $actuales = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $stmt->closeCursor();
 
-        $centrosUsuariosDB = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-        $stmt->closeCursor();
-
-        $registrosCentrosUsuarioEliminados = [];
-        $index = 0;
-        $noDentro = false;
-
-        /*
-         * Filtrar la lista de centros asignados a un usuario de la base de datos
-         * contra la lista de cenentros usuarios enviada por el usuario.
-         * Los que no se encuetran en la lista del usuario se ingresaran dentro del
-         * arreglo de $registrosCentrosUsuarioEliminados
-         * */
-        foreach ($centrosUsuariosDB as $cudb)
-        {
-            if($data[0]['RegistroId'] != 0)
-            {
-                foreach ($data as $ucu)
-                {
-                    if(intval($ucu['RegistroId']) == intval($cudb['Centro_Id']) && intval($ucu['UsuarioId']) == intval($cudb['Usuarios_Id']))
-                    {
-                        $noDentro = false;
-                        break;
-                    }
-                    else
-                    {
-                        $noDentro = true;
-                    }
-
+            // El valor 0 significa dejar al usuario sin centros; no es un centro real.
+            $seleccionados = [];
+            foreach ($data as $centro) {
+                if ($centro['RegistroId'] > 0) {
+                    $seleccionados[(int) $centro['RegistroId']] = $centro;
                 }
             }
-            else
-                $noDentro = true;
 
-            if($noDentro)
-            {
-                $re['Id'] =$cudb['Id'];
-                $registrosCentrosUsuarioEliminados[$index] = $re;
-                $index++;
+            $eliminar = $conexion->prepare('call filtro_eliminarCentrosUsuario(:Id)');
+            foreach ($actuales as $actual) {
+                if (!isset($seleccionados[(int) $actual['Centro_Id']])) {
+                    $eliminar->execute(['Id' => $actual['Id']]);
+                    $eliminar->closeCursor();
+                }
             }
-        }
 
-        /*
-        * Proceso para eliminar un o mas registros de usuario centros
-        * */
-        $stmt = null;
-        $stmt = $this->db->conectar()->prepare("call filtro_eliminarCentrosUsuario(:Id)");
-        foreach ($registrosCentrosUsuarioEliminados as $ucdb)
-        {
-            $stmt->execute($ucdb);
-            $stmt->closeCursor();
+            $agregar = $conexion->prepare('call filtro_agregarCentrosUsuario(:RegistroId,:UsuarioId)');
+            foreach ($seleccionados as $centro) {
+                $agregar->execute($centro);
+                $agregar->closeCursor();
+            }
+            $conexion->commit();
+            return 'ok';
+        } catch (Throwable $error) {
+            if ($conexion->inTransaction()) $conexion->rollBack();
+            error_log('Error al asignar centros al usuario: ' . $error->getMessage());
+            return 'errorGuardar';
         }
-
-        $stmt = null;
-        //Insertar nuevo registros
-        $stmt = $this->db->conectar()->prepare("call filtro_agregarCentrosUsuario(:RegistroId,:UsuarioId)");
-        /*
-         * Insertar un nuevo registro
-         * */
-        foreach ($data as $cc)
-        {
-            $stmt->execute($cc);
-            $stmt->closeCursor();
-        }
-
-        return 'ok';
     }
 
     /*
