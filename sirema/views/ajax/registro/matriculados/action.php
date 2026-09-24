@@ -54,6 +54,18 @@ switch ($data["type"])
         echo json_encode($result);
         break;
 
+    case "getEtnias":
+        echo json_encode($matriculado->getEtnias());
+        break;
+
+    case "getDistribucionEtnica":
+        echo json_encode($matriculado->getDistribucionEtnica($data['id'] ?? null));
+        break;
+
+    case "guardarDistribucionEtnica":
+        echo json_encode($matriculado->guardarDistribucionEtnica($data['registro'] ?? null));
+        break;
+
     case "insert":
         $result = $matriculado->insert($data['registro']);
         echo json_encode($result);
@@ -71,4 +83,3 @@ switch ($data["type"])
 
 
 }
-

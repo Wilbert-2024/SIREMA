@@ -203,6 +203,34 @@ class matriculadoController
         return $options;
     }
 
+    public function getEtnias()
+    {
+        return $this->model->getEtnias();
+    }
+
+    public function getDistribucionEtnica($id, $paraReporte = false)
+    {
+        if (!isset($_SESSION['usuario']) ||
+            !filter_var($id, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]])) {
+            return 'denegado';
+        }
+        $permiso = $this->modelFuncionUsuario->validarPermiso($paraReporte ? 'MATRIN' : 'MATRCR');
+        if (!$permiso || empty($permiso['Estado'])) return 'denegado';
+        $matricula = $this->model->getDistribucionEtnica((int) $id);
+        return $matricula ?: 'noEncontrada';
+    }
+
+    public function guardarDistribucionEtnica($data)
+    {
+        if (!isset($_SESSION['usuario'])) return 'denegado';
+        $permiso = $this->modelFuncionUsuario->validarPermiso('MATRCR');
+        if (!$permiso || empty($permiso['Estado'])) return 'denegado';
+        if (!is_array($data) || !isset($data['MatriculaId'], $data['Etnias']) ||
+            !filter_var($data['MatriculaId'], FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]) ||
+            !is_array($data['Etnias'])) return 'etniasInvalidas';
+        return $this->model->guardarDistribucionEtnica((int) $data['MatriculaId'], $data['Etnias']);
+    }
+
     /*
      * Insertar un nuevo registro de matricula
      * */

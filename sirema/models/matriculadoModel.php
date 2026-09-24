@@ -62,6 +62,103 @@ class matriculadoModel
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    public function getEtnias()
+    {
+        $stmt = $this->db->conectar()->query("SELECT Id, DescripcionEtnia FROM etnia WHERE Estado = 1 ORDER BY Id");
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function getMatriculaParaEtnia($id, $usuario, $conexion = null, $bloquear = false)
+    {
+        if ($conexion === null) $conexion = $this->db->conectar();
+        $sql = "SELECT r.Id, r.Total, r.Estado, c.DescripcionCentro AS Centro,
+                       ca.DescripcionCarrera AS Carrera
+                FROM registro_matricula r
+                JOIN carrera_centro cc ON cc.Id = r.CarreraCentro_Id
+                JOIN centro c ON c.Id = cc.Centro_Id
+                JOIN carrera ca ON ca.Id = cc.Carrera_Id
+                JOIN usuario_centros uc ON uc.Centro_Id = cc.Centro_Id
+                JOIN usuarios u ON u.Id = uc.Usuarios_Id
+                WHERE r.Id = ? AND u.NombreUsuario = ? AND r.Estado = 1
+                LIMIT 1";
+        if ($bloquear) $sql .= " FOR UPDATE";
+        $stmt = $conexion->prepare($sql);
+        $stmt->execute([$id, $usuario]);
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    public function getDistribucionEtnica($id)
+    {
+        $matricula = $this->getMatriculaParaEtnia($id, $_SESSION['usuario']);
+        if (!$matricula) return null;
+        $stmt = $this->db->conectar()->prepare(
+            "SELECT e.Id AS EtniaId, e.DescripcionEtnia, COALESCE(d.Cantidad, 0) AS Cantidad
+             FROM etnia e LEFT JOIN resgistro_matricula_etnia d
+             ON d.Etnia_Id = e.Id AND d.RegistroMatricula_Id = ?
+             WHERE e.Estado = 1 ORDER BY e.Id"
+        );
+        $stmt->execute([$id]);
+        $matricula['Etnias'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        return $matricula;
+    }
+
+    public function guardarDistribucionEtnica($id, $etnias)
+    {
+        $conexion = $this->db->conectar();
+        $conexion->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        try {
+            $conexion->beginTransaction();
+            $matricula = $this->getMatriculaParaEtnia($id, $_SESSION['usuario'], $conexion, true);
+            if (!$matricula) {
+                $conexion->rollBack();
+                return 'noEncontrada';
+            }
+            $activos = [];
+            $stmt = $conexion->query("SELECT Id FROM etnia WHERE Estado = 1");
+            foreach ($stmt->fetchAll(PDO::FETCH_COLUMN) as $etniaId) $activos[(int) $etniaId] = true;
+            if (!$activos || count($etnias) !== count($activos)) {
+                $conexion->rollBack();
+                return 'etniasInvalidas';
+            }
+            $vistos = [];
+            $suma = 0;
+            foreach ($etnias as $etnia) {
+                if (!is_array($etnia) || !isset($etnia['EtniaId'], $etnia['Cantidad']) ||
+                    !is_scalar($etnia['EtniaId']) || !is_scalar($etnia['Cantidad']) ||
+                    !preg_match('/^[1-9][0-9]*$/D', (string) $etnia['EtniaId']) ||
+                    !preg_match('/^(0|[1-9][0-9]*)$/D', (string) $etnia['Cantidad']) ||
+                    strlen((string) $etnia['Cantidad']) > 10 ||
+                    (float) $etnia['Cantidad'] > 2147483647) {
+                    $conexion->rollBack();
+                    return 'etniasInvalidas';
+                }
+                $etniaId = (int) $etnia['EtniaId'];
+                if (!isset($activos[$etniaId]) || isset($vistos[$etniaId])) {
+                    $conexion->rollBack();
+                    return 'etniasInvalidas';
+                }
+                $vistos[$etniaId] = true;
+                $suma += (int) $etnia['Cantidad'];
+            }
+            if ($suma !== (int) $matricula['Total']) {
+                $conexion->rollBack();
+                return 'etniasInvalidas';
+            }
+            $stmt = $conexion->prepare("DELETE FROM resgistro_matricula_etnia WHERE RegistroMatricula_Id = ?");
+            $stmt->execute([$id]);
+            $stmt = $conexion->prepare("INSERT INTO resgistro_matricula_etnia (RegistroMatricula_Id, Etnia_Id, Cantidad) VALUES (?, ?, ?)");
+            foreach ($etnias as $etnia) {
+                $stmt->execute([$id, (int) $etnia['EtniaId'], (int) $etnia['Cantidad']]);
+            }
+            $conexion->commit();
+            return 'ok';
+        } catch (Throwable $error) {
+            if ($conexion->inTransaction()) $conexion->rollBack();
+            error_log('Error al guardar distribucion etnica: ' . $error->getMessage());
+            return 'errorGuardar';
+        }
+    }
+
     /*
      * Insertar registro_matricula con su detalle
      * */
